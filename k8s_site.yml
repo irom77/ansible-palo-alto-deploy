@@ -1,0 +1,66 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: azure-pan-ha
+  labels:
+        app: azure-pan-ha
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azure-pan-ha
+  template:
+    metadata:
+      name: azure-pan-ha
+      labels:
+        app: azure-pan-ha      
+    spec:
+      containers:
+      - name: azure-pan-ha
+        image: irom77/azure-pan-ha:latest
+        env: 
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: azure-pan-ha-config
+              key: AZURE_CLIENT_ID
+        - name: AZURE_TENANT
+          valueFrom:
+            configMapKeyRef:
+              name: azure-pan-ha-config
+              key: AZURE_SECRET  
+        - name: AZURE_SUBSCRIPTION_ID
+          valueFrom:
+            configMapKeyRef:
+              name: azure-pan-ha-config
+              key: AZURE_SUBSCRIPTION_ID
+        - name: AZURE_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: azure-pan-ha-config
+              key: AZURE_SECRET     
+        - name: adminPassword
+          valueFrom:
+            configMapKeyRef:
+              name: azure-pan-ha-config
+              key: adminPassword              
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6514
+---    
+apiVersion: v1
+kind: Service
+metadata:
+  name: azure-pan-ha
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels:
+    app: azure-pan-ha
+spec:
+  type: LoadBalancer
+  ports:
+  - protocol: UDP
+    port: 6514
+    name: syslog
+  selector:
+    app: azure-pan-ha 
